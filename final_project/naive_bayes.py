@@ -7,6 +7,7 @@ import scipy.stats as sp
 import numpy as np
 from sklearn.naive_bayes import GaussianNB
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.feature_extraction.text import CountVectorizer
 import gzip
 import re
 
@@ -32,9 +33,15 @@ class Data:
 				'continuous', 'class']
 		self.limit = limit
 
+		with gzip.open(location, 'rb') as f:
+			for line in f:
+				x = line.decode('utf8').splitlines()
+				for item in x:
+					self.dataset.append(item.split(','))
+
 		if self.limit is None:
-			self.train_size = int(len(self.dataset)*self.split_ratio)
-			self.valid_size = int(len(self.dataset)*(1-self.split_ratio))
+			self.train_size = int(round(len(self.dataset)*self.split_ratio))
+			self.valid_size = int(round(len(self.dataset)*(1-self.split_ratio)))
 		else:
 			self.train_size = int(round(self.limit))
 			self.valid_size = int(round(self.limit*(1-self.split_ratio)))
@@ -46,11 +53,6 @@ class Data:
 		self.train_y = []
 		self.valid_y = []
 
-		with gzip.open(location, 'rb') as f:
-			for line in f:
-				x = line.decode('utf8').splitlines()
-				for item in x:
-					self.dataset.append(item.split(','))
 		self.splitDataset()
 
 	def splitDataset(self):
@@ -84,8 +86,25 @@ class Data:
 					self.valid_y.append(item[i])
 			data_index += 1
 
-def convert_to_float(list):
-	pass
+def convert_to_float(dataset):
+	return_array = []
+	for i, x in enumerate(dataset):
+		try:
+			return_array.append( [float(k) for k in x] )
+		except ValueError:
+			pass
+	return return_array
+
+# def get_accuracy(data, predictions):
+# 	"""
+# 	Calculate the prediction accuracy
+# 	"""
+# 	correct = 0
+# 	for x in range(len(data)):
+# 		if data[x] == predictions[x]:
+# 			correct += 1
+# 	return (correct/float(len(data))) * 100.0
+
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
@@ -97,38 +116,54 @@ if __name__ == "__main__":
 
 	if args.limit < 0:
 		dataset = Data("kddcup.data_10_percent.gz",1-args.split)
+		# dataset = Data("kddcup.data.gz",1-args.split)
 	else:
 		dataset = Data("kddcup.data_10_percent.gz",1-args.split, args.limit)
 
 	gnb = GaussianNB()
 	mnb  = MultinomialNB()
 
-	# Convert values to floats for training and validation data
-	train_x = []
-	for i, x in enumerate(dataset.cont_trainx):
-		try:
-			train_x.append( [float(k) for k in x] )
-		except ValueError:
-			pass
+	train_x = convert_to_float(dataset.cont_trainx)
+	valid_x = convert_to_float(dataset.cont_validx)
 
-	valid_x = []
-	for i, x in enumerate(dataset.cont_validx):
-		try:
-			valid_x.append( [float(k) for k in x] )
-		except ValueError:
-			pass
-
-	# print(dataset.cont_trainx)
-	# train_x = [int(i) for i in dataset.cont_trainx]
-	# print(train_x)
 	train_x = np.array(train_x)
-
-	# X = np.array([np.array(xi) for xi in train_x])
 	train_y = np.array(dataset.train_y)
+	valid_x = np.array(valid_x)
 
 	gnb.fit(train_x, train_y)
-	valid_x = np.array(valid_x)
-	# print (dataset.cont_validx)
-	# mnb.fit(dataset.multi_trainx, dataset.train_y)
-	prediction = gnb.predict(valid_x)
+	# predictions = gnb.predict(valid_x)
+	accuracy = gnb.score(valid_x, dataset.valid_y)
+	print('Accuracy: {0}'.format(accuracy))
+
+	# count_vect = CountVectorizer(analyzer='word')
+	# mnb_train_x = np.array(dataset.multi_trainx)
+	# print(mnb_train_x)
+	# mnb_train_counts = count_vect.fit_transform([x for x in dataset.multi_trainx]).toarray()
+	# print(dataset.multi_trainx)
+	# print (word for word in (x for x in dataset.multi_trainx))
+	# multi_trainx = []
+	# mnb_train_counts = count_vect.fit_transform(multi_trainx)
+	# print(mnb_train_x)
+	# print(mnb_train_counts)
+
+	# vec = CountVectorizer(tokenizer=lambda doc: doc, lowercase = False)
+	# mnb_train_counts = vec.fit_transform(dataset.multi_trainx)
+
+	# mnb_valid = vec.fit_transform(dataset.multi_validx)
+
+	# print(dataset.multi_trainx)
+	# print(mnb_train_counts)
+
+	# mnb.fit(mnb_train_counts, train_y)
+	# predict = mnb.predict(mnb_valid)
+
+	# print(predict)
+
+	# vect_repr = list(map(count_vect.fit_transform, dataset.multi_trainx))
+	# # print(vect_repr)
+	# mnb_train_x = np.array(vect_repr)
+	# print(mnb_train_x[0])
+
+	# mnb.fit(vect_repr, train_y)
+	# mnb.fit(mnb_train_x, train_y)
 
