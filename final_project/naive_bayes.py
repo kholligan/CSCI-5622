@@ -36,8 +36,8 @@ class Data:
 			self.train_size = int(len(self.dataset)*self.split_ratio)
 			self.valid_size = int(len(self.dataset)*(1-self.split_ratio))
 		else:
-			self.train_size = int(self.limit)
-			self.valid_size = int(self.limit*(1-self.split_ratio))
+			self.train_size = int(round(self.limit))
+			self.valid_size = int(round(self.limit*(1-self.split_ratio)))
 
 		self.cont_trainx = [[] for _ in range(self.train_size)]
 		self.multi_trainx = [[] for _ in range(self.train_size)]
@@ -54,13 +54,6 @@ class Data:
 		self.splitDataset()
 
 	def splitDataset(self):
-		if self.limit is None:
-			train_size = int(len(self.dataset)*self.split_ratio)
-			valid_size = int(len(self.dataset)*(1-self.split_ratio))
-		else:
-			train_size = self.limit
-			valid_size = self.limit*(1-self.split_ratio)
-
 		# print(len(self.dataset), self.split_ratio, train_size)
 		copy = self.dataset
 		# Randomly pull items from the data set for the training set
@@ -91,6 +84,8 @@ class Data:
 					self.valid_y.append(item[i])
 			data_index += 1
 
+def convert_to_float(list):
+	pass
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
@@ -107,9 +102,33 @@ if __name__ == "__main__":
 
 	gnb = GaussianNB()
 	mnb  = MultinomialNB()
-	# train_x = np.array(dataset.train_x).astype(np.float)
-	# train_y = np.array(dataset.train_y).astype(np.float)
-	# gnb.fit(dataset.cont_trainx, dataset.train_y)
+
+	# Convert values to floats for training and validation data
+	train_x = []
+	for i, x in enumerate(dataset.cont_trainx):
+		try:
+			train_x.append( [float(k) for k in x] )
+		except ValueError:
+			pass
+
+	valid_x = []
+	for i, x in enumerate(dataset.cont_validx):
+		try:
+			valid_x.append( [float(k) for k in x] )
+		except ValueError:
+			pass
+
+	# print(dataset.cont_trainx)
+	# train_x = [int(i) for i in dataset.cont_trainx]
+	# print(train_x)
+	train_x = np.array(train_x)
+
+	# X = np.array([np.array(xi) for xi in train_x])
+	train_y = np.array(dataset.train_y)
+
+	gnb.fit(train_x, train_y)
+	valid_x = np.array(valid_x)
+	# print (dataset.cont_validx)
 	# mnb.fit(dataset.multi_trainx, dataset.train_y)
-	# prediction = gnb.predict(dataset.cont_validx)
+	prediction = gnb.predict(valid_x)
 
