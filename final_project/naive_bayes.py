@@ -71,7 +71,7 @@ class Data:
 			for i in range(len(item)):
 				if self.header_type[i] == 'continuous':
 					self.cont_trainx[data_index].append(item[i])
-				else if self.header_type[i] == 'symbolic':
+				elif self.header_type[i] == 'symbolic':
 					self.multi_trainx[data_index].append(item[i])
 				else:
 					self.train_y.append(item[i])
@@ -85,11 +85,12 @@ class Data:
 			for i in range(len(item)):
 				if self.header_type[i] == 'continuous':
 					self.cont_validx[data_index].append(item[i])
-				else if self.header_type[i] == 'symbolic'::
+				elif self.header_type[i] == 'symbolic':
 					self.multi_validx[data_index].append(item[i])
 				else:
 					self.valid_y.append(item[i])
 			data_index += 1
+
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
@@ -108,6 +109,7 @@ if __name__ == "__main__":
 	mnb  = MultinomialNB()
 	# train_x = np.array(dataset.train_x).astype(np.float)
 	# train_y = np.array(dataset.train_y).astype(np.float)
-	gnb.fit(data)
-	prediction = clf.predict(dataset.valid_x)
+	# gnb.fit(dataset.cont_trainx, dataset.train_y)
+	# mnb.fit(dataset.multi_trainx, dataset.train_y)
+	# prediction = gnb.predict(dataset.cont_validx)
 
