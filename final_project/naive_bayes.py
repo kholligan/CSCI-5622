@@ -6,6 +6,7 @@ import math
 import scipy.stats as sp
 import numpy as np
 from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import MultinomialNB
 import gzip
 import re
 
@@ -42,6 +43,8 @@ class Data:
 		self.multi_trainx = [[] for _ in range(self.train_size)]
 		self.cont_validx = [[] for _ in range(self.valid_size)]
 		self.multi_validx = [[] for _ in range(self.valid_size)]
+		self.train_y = []
+		self.valid_y = []
 
 		with gzip.open(location, 'rb') as f:
 			for line in f:
@@ -68,8 +71,10 @@ class Data:
 			for i in range(len(item)):
 				if self.header_type[i] == 'continuous':
 					self.cont_trainx[data_index].append(item[i])
-				else:
+				else if self.header_type[i] == 'symbolic':
 					self.multi_trainx[data_index].append(item[i])
+				else:
+					self.train_y.append(item[i])
 			data_index += 1
 
 		data_index = 0
@@ -80,8 +85,10 @@ class Data:
 			for i in range(len(item)):
 				if self.header_type[i] == 'continuous':
 					self.cont_validx[data_index].append(item[i])
-				else:
+				else if self.header_type[i] == 'symbolic'::
 					self.multi_validx[data_index].append(item[i])
+				else:
+					self.valid_y.append(item[i])
 			data_index += 1
 
 if __name__ == "__main__":
@@ -97,9 +104,10 @@ if __name__ == "__main__":
 	else:
 		dataset = Data("kddcup.data_10_percent.gz",1-args.split, args.limit)
 
-	# clf = GaussianNB()
+	gnb = GaussianNB()
+	mnb  = MultinomialNB()
 	# train_x = np.array(dataset.train_x).astype(np.float)
 	# train_y = np.array(dataset.train_y).astype(np.float)
-	# clf.fit(list(map(int,dataset.train_x)), list(map(int,dataset.train_y)))
-	# prediction = clf.predict(dataset.valid_x)
+	gnb.fit(data)
+	prediction = clf.predict(dataset.valid_x)
 
