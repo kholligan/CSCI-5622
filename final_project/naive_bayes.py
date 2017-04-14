@@ -95,16 +95,6 @@ def convert_to_float(dataset):
 			pass
 	return return_array
 
-# def get_accuracy(data, predictions):
-# 	"""
-# 	Calculate the prediction accuracy
-# 	"""
-# 	correct = 0
-# 	for x in range(len(data)):
-# 		if data[x] == predictions[x]:
-# 			correct += 1
-# 	return (correct/float(len(data))) * 100.0
-
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
@@ -115,25 +105,44 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	if args.limit < 0:
-		dataset = Data("kddcup.data_10_percent.gz",1-args.split)
-		# dataset = Data("kddcup.data.gz",1-args.split)
+		# dataset = Data("kddcup.data_10_percent.gz",1-args.split)
+		train = Data("kddcup.data_10_percent.gz", 1)
+		valid = Data("corrected.gz", 1)
+
 	else:
 		dataset = Data("kddcup.data_10_percent.gz",1-args.split, args.limit)
 
 	gnb = GaussianNB()
 	mnb  = MultinomialNB()
 
-	train_x = convert_to_float(dataset.cont_trainx)
-	valid_x = convert_to_float(dataset.cont_validx)
+	# # If using 10% train + corrected.gz
+	train_x = convert_to_float(train.cont_trainx)
+	valid_x = convert_to_float(valid.cont_trainx)
+	train_y = np.array(train.train_y)
+	valid_y = np.array(valid.train_y)
 
 	train_x = np.array(train_x)
-	train_y = np.array(dataset.train_y)
 	valid_x = np.array(valid_x)
 
 	gnb.fit(train_x, train_y)
+	accuracy = gnb.score(valid_x, valid_y)
+
+	# # For using 10% data split into train/valid set
+	# train_x = convert_to_float(dataset.cont_trainx)
+	# valid_x = convert_to_float(dataset.cont_validx)
+
+	# train_x = np.array(train_x)
+	# train_y = np.array(dataset.train_y)
+	# valid_x = np.array(valid_x)
+
+	# gnb.fit(train_x, train_y)
 	# predictions = gnb.predict(valid_x)
-	accuracy = gnb.score(valid_x, dataset.valid_y)
+	# accuracy = gnb.score(valid_x, dataset.valid_y)
+	
 	print('Accuracy: {0}'.format(accuracy))
+
+
+	# # Failed MNB work
 
 	# count_vect = CountVectorizer(analyzer='word')
 	# mnb_train_x = np.array(dataset.multi_trainx)
