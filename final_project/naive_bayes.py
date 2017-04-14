@@ -50,6 +50,8 @@ class Data:
 		self.multi_trainx = [[] for _ in range(self.train_size)]
 		self.cont_validx = [[] for _ in range(self.valid_size)]
 		self.multi_validx = [[] for _ in range(self.valid_size)]
+		self.train_x = []
+		self.valid_x = []
 		self.train_y = []
 		self.valid_y = []
 
@@ -71,6 +73,7 @@ class Data:
 				else:
 					self.train_y.append(item[i])
 			data_index += 1
+			self.train_x.append(item[:-1])
 
 		data_index = 0
 		# Put the remaining items in the validation set
@@ -85,6 +88,7 @@ class Data:
 				else:
 					self.valid_y.append(item[i])
 			data_index += 1
+			self.valid_x.append(item[:-1])
 
 def convert_to_float(dataset):
 	return_array = []
@@ -95,6 +99,7 @@ def convert_to_float(dataset):
 			pass
 	return return_array
 
+# def combine_data(gnb_data, mnb_data):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
@@ -104,75 +109,67 @@ if __name__ == "__main__":
     					help="Percent of data to use for validation")
 	args = parser.parse_args()
 
+
 	if args.limit < 0:
-		# dataset = Data("kddcup.data_10_percent.gz",1-args.split)
-		train = Data("kddcup.data_10_percent.gz", 1)
-		valid = Data("corrected.gz", 1)
+		dataset = Data("kddcup.data_10_percent.gz",1-args.split)
+		# train = Data("kddcup.data_10_percent.gz", 1)
+		# valid = Data("corrected.gz", 1)
 
 	else:
 		dataset = Data("kddcup.data_10_percent.gz",1-args.split, args.limit)
 
 	gnb = GaussianNB()
 	mnb  = MultinomialNB()
+	gnb2 = GaussianNB()
 
 	# # If using 10% train + corrected.gz
-	train_x = convert_to_float(train.cont_trainx)
-	valid_x = convert_to_float(valid.cont_trainx)
-	train_y = np.array(train.train_y)
-	valid_y = np.array(valid.train_y)
-
-	train_x = np.array(train_x)
-	valid_x = np.array(valid_x)
-
-	gnb.fit(train_x, train_y)
-	accuracy = gnb.score(valid_x, valid_y)
-
-	# # For using 10% data split into train/valid set
-	# train_x = convert_to_float(dataset.cont_trainx)
-	# valid_x = convert_to_float(dataset.cont_validx)
+	# train_x = convert_to_float(train.cont_trainx)
+	# valid_x = convert_to_float(valid.cont_trainx)
+	# train_y = np.array(train.train_y)
+	# valid_y = np.array(valid.train_y)
 
 	# train_x = np.array(train_x)
-	# train_y = np.array(dataset.train_y)
 	# valid_x = np.array(valid_x)
 
 	# gnb.fit(train_x, train_y)
-	# predictions = gnb.predict(valid_x)
-	# accuracy = gnb.score(valid_x, dataset.valid_y)
+	# accuracy = gnb.score(valid_x, valid_y)
+
+	# # For using 10% data split into train/valid set
+	train_x = convert_to_float(dataset.cont_trainx)
+	valid_x = convert_to_float(dataset.cont_validx)
+
+	train_x = np.array(train_x)
+	train_y = np.array(dataset.train_y)
+	valid_x = np.array(valid_x)
+
+	gnb.fit(train_x, train_y)
+	predictions = gnb.predict(valid_x)
+	accuracy = gnb.score(valid_x, dataset.valid_y)
 	
-	print('Accuracy: {0}'.format(accuracy))
+	print('gnb accuracy: {0}'.format(accuracy))
 
 
-	# # Failed MNB work
+	# # MNB
+	vec = CountVectorizer(tokenizer=lambda doc: doc, lowercase = False)
+	mnb_train_counts = vec.fit_transform(dataset.multi_trainx)
+	mnb_valid = vec.transform(dataset.multi_validx)
 
-	# count_vect = CountVectorizer(analyzer='word')
-	# mnb_train_x = np.array(dataset.multi_trainx)
-	# print(mnb_train_x)
-	# mnb_train_counts = count_vect.fit_transform([x for x in dataset.multi_trainx]).toarray()
-	# print(dataset.multi_trainx)
-	# print (word for word in (x for x in dataset.multi_trainx))
-	# multi_trainx = []
-	# mnb_train_counts = count_vect.fit_transform(multi_trainx)
-	# print(mnb_train_x)
-	# print(mnb_train_counts)
+	print(mnb_valid)
 
-	# vec = CountVectorizer(tokenizer=lambda doc: doc, lowercase = False)
-	# mnb_train_counts = vec.fit_transform(dataset.multi_trainx)
+	mnb.fit(mnb_train_counts, train_y)
+	accuracy = mnb.score(mnb_valid, dataset.valid_y)
+	
+	print('mnb accuracy: {0}'.format(accuracy))
 
-	# mnb_valid = vec.fit_transform(dataset.multi_validx)
+	gnb_predict_proba = gnb.predict_proba(train_x)
+	mnb_predict_proba = mnb.predict_proba(mnb_train_counts)
+	new_gnb_data = np.hstack((gnb_predict_proba, mnb_predict_proba))
 
-	# print(dataset.multi_trainx)
-	# print(mnb_train_counts)
+	# new_valid_x = convert_dataset(dataset.valid_x)
+	gnb2.fit(new_gnb_data, train_y)
+	# accuracy = gnb2.score(new_valid_x, dataset.valid_y)
+	
+	# print('mnb accuracy: {0}'.format(accuracy))
 
-	# mnb.fit(mnb_train_counts, train_y)
-	# predict = mnb.predict(mnb_valid)
 
-	# print(predict)
-
-	# vect_repr = list(map(count_vect.fit_transform, dataset.multi_trainx))
-	# # print(vect_repr)
-	# mnb_train_x = np.array(vect_repr)
-	# print(mnb_train_x[0])
-
-	# mnb.fit(vect_repr, train_y)
-	# mnb.fit(mnb_train_x, train_y)
 
